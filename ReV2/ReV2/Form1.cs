@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,6 +17,7 @@ namespace ReV2
         PortfolioEntities context = new PortfolioEntities();
         List<Tick> Ticks;
         List<PortfolioItem> Portfolio = new List<PortfolioItem>();
+        List<decimal> nyereségekRendezve;
         public Form1()
         {
             InitializeComponent();
@@ -25,23 +27,33 @@ namespace ReV2
             //Additional();
 
 
+
             List<decimal> Nyereségek = new List<decimal>();
+
             int intervalum = 30;
             DateTime kezdőDátum = (from x in Ticks select x.TradingDay).Min();
             DateTime záróDátum = new DateTime(2016, 12, 30);
+
+
             TimeSpan z = záróDátum - kezdőDátum;
+
+
             for (int i = 0; i < z.Days - intervalum; i++)
             {
-                decimal ny = GetPortfolioValue(kezdőDátum.AddDays(i + intervalum))
-                           - GetPortfolioValue(kezdőDátum.AddDays(i));
+                DateTime ablakZaro = kezdőDátum.AddDays(i + intervalum);//30 nappal későbbinek kell lennie
+                DateTime ablakNyito = kezdőDátum.AddDays(i);
+
+
+                decimal ny = GetPortfolioValue(ablakZaro)
+                           - GetPortfolioValue(ablakNyito);
                 Nyereségek.Add(ny);
                 Console.WriteLine(i + " " + ny);
             }
 
-            var nyereségekRendezve = (from x in Nyereségek
-                                      orderby x
-                                      select x)
-                                        .ToList();
+            nyereségekRendezve = (from x in Nyereségek
+                                  orderby x
+                                  select x)
+                                       .ToList();
             MessageBox.Show(nyereségekRendezve[nyereségekRendezve.Count() / 5].ToString());
 
 
@@ -110,6 +122,29 @@ namespace ReV2
                         Volume = y.Volume
                     };
             dataGridView1.DataSource = kapcsolt.ToList();
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            var sfd = new SaveFileDialog();
+            sfd.InitialDirectory = Application.StartupPath;
+
+            if (sfd.ShowDialog() != DialogResult.OK) return;
+
+
+
+
+
+            using (var sw = new StreamWriter(sfd.FileName, false, Encoding.UTF8))
+            {
+                sw.WriteLine("nyereség;rendezve");
+                for (int i = 0; i < nyereségekRendezve.Count(); i++)
+                {
+
+
+                    sw.WriteLine(string.Format("{0};{1}", i, nyereségekRendezve[i]));
+                }
+            }
         }
     }
 }
